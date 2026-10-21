@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dissolve Pic · 二次元溶图工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">🎨 Dissolve Pic <span class="tag">MVP</span></div>
+    <div class="status-pill" id="backendStatus"><span class="dot"></span>正在连接服务…</div>
+    <button class="ghost" id="btnHelp">操作指南</button>
+  </header>
+
+  <main class="workspace">
+    <!-- 左侧：素材上传与导出 -->
+    <section class="left-rail">
+      <h2>素材</h2>
+
+      <div class="upload-card" id="sceneCard" tabindex="0">
+        <div class="card-label">① 现实场景图</div>
+        <div class="thumb" id="sceneThumb"><span>点击 / 拖入图片</span></div>
+        <div class="card-actions">
+          <button class="mini" id="sceneChange">更换</button>
+          <button class="mini danger" id="sceneClear">移除</button>
+        </div>
+      </div>
+
+      <div class="upload-card" id="charCard" tabindex="0">
+        <div class="card-label">② 角色图</div>
+        <div class="thumb" id="charThumb"><span>点击 / 拖入图片</span></div>
+        <div class="card-actions">
+          <button class="mini" id="charChange">更换</button>
+          <button class="mini danger" id="charClear">移除</button>
+        </div>
+      </div>
+
+      <label class="field">
+        抠图模型
+        <select id="modelSelect">
+          <option value="isnet-anime" selected>动漫角色（默认）</option>
+          <option value="u2net_human_seg">真人 / 半身像</option>
+          <option value="isnet-general-use">通用物体</option>
+        </select>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="skipSegment">
+        图片已有透明背景（跳过抠图）
+      </label>
+      <label class="check">
+        <input type="checkbox" id="cleanupCheck" checked>
+        自动清除残留背景（缝隙 / 碎片，重新上传生效）
+      </label>
+
+      <h2>导出</h2>
+      <div class="btn-row">
+        <button id="btnExportPng" class="primary" disabled>保存 PNG</button>
+        <button id="btnExportJpg" disabled>保存 JPG</button>
+      </div>
+      <button id="btnResetAll" class="danger ghost">清空画布</button>
+    </section>
+
+    <!-- 中间：画布 -->
+    <section class="stage" id="stage">
+      <div class="stage-empty" id="stageEmpty">
+        <div class="big">🖼️</div>
+        <p>先上传 <b>场景图</b>，再上传 <b>角色图</b><br>角色会自动抠图并合成的场景上</p>
+      </div>
+      <canvas id="stageCanvas"></canvas>
+      <div id="brushRing" class="hidden"></div>
+      <div class="stage-hint" id="stageHint">拖动移动角色 · 滚轮缩放 · 方向键微调（Shift 加速）</div>
+      <div class="spinner hidden" id="spinner"><div></div><p id="spinnerText">处理中…</p></div>
+    </section>
+
+    <!-- 右侧：参数面板 -->
+    <aside class="panel">
+      <details class="group" id="groupChar" open>
+        <summary>角色调整</summary>
+        <div class="group-body" id="charControls">
+          <label class="slider">
+            <span>大小 <b id="valScale">100%</b></span>
+            <input type="range" id="scaleRange" min="5" max="800" value="100">
+          </label>
+          <label class="slider">
+            <span>旋转 <b id="valRotation">0°</b></span>
+            <input type="range" id="rotationRange" min="-180" max="180" value="0">
+          </label>
+          <label class="slider">
+            <span>不透明度 <b id="valOpacity">100%</b></span>
+            <input type="range" id="opacityRange" min="20" max="100" value="100">
+          </label>
+          <label class="slider">
+            <span>边缘羽化 <b id="valFeather">0</b></span>
+            <input type="range" id="featherRange" min="0" max="12" value="0">
+          </label>
+          <div class="btn-row">
+            <button class="mini" id="btnFlip">⇋ 水平翻转</button>
+            <button class="mini" id="btnResetChar">重置位置</button>
+          </div>
+          <div class="tool-row">
+            <span>手动修图</span>
+            <div class="btn-row">
+              <button class="mini toggle" id="toolErase" data-tool="erase">擦除</button>
+              <button class="mini toggle" id="toolRestore" data-tool="restore">还原</button>
+              <button class="mini toggle" id="toolWand" data-tool="wand">魔棒</button>
+            </div>
+          </div>
+          <label class="slider">
+            <span>笔刷大小 <b id="valBrush">40</b></span>
+            <input type="range" id="brushRange" min="10" max="150" value="40">
+          </label>
+          <label class="slider">
+            <span>魔棒容差 <b id="valTolerance">40</b></span>
+            <input type="range" id="toleranceRange" min="10" max="120" value="40">
+          </label>
+          <p class="note">魔棒：点击残留背景（如双腿间缝隙）自动清除相似色区域。</p>
+          <p class="note">光影与投影调节已移至「光影融合」面板。</p>
+        </div>
+      </details>
+
+      <details class="group" open>
+        <summary>色彩调整</summary>
+        <div class="group-body">
+          <div class="segmented" id="scopeSwitch">
+            <button data-scope="char" class="active">角色</button>
+            <button data-scope="scene">场景</button>
+            <button data-scope="both">两者</button>
+          </div>
+          <label class="slider">
+            <span>曝光 <b data-val="exposure">0</b></span>
+            <input type="range" data-adj="exposure" min="-100" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>对比度 <b data-val="contrast">0</b></span>
+            <input type="range" data-adj="contrast" min="-100" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>饱和度 <b data-val="saturation">0</b></span>
+            <input type="range" data-adj="saturation" min="-100" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>色温 <b data-val="temperature">0</b></span>
+            <input type="range" data-adj="temperature" min="-100" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>色调 <b data-val="hue">0</b></span>
+            <input type="range" data-adj="hue" min="-100" max="100" value="0">
+          </label>
+          <button class="mini" id="btnResetAdj">重置当前范围</button>
+        </div>
+      </details>
+
+      <details class="group" open>
+        <summary>自动色调匹配</summary>
+        <div class="group-body">
+          <label class="check">
+            <input type="checkbox" id="matchToggle">
+            让角色色彩贴近场景（Reinhard 匹配）
+          </label>
+          <label class="slider">
+            <span>匹配强度 <b id="valMatch">70%</b></span>
+            <input type="range" id="matchStrength" min="0" max="100" value="70">
+          </label>
+          <p class="note">按角色与场景的色彩均值/方差自动迁移，建议先开匹配、再用上方滑杆细调。</p>
+        </div>
+      </details>
+
+      <details class="group" id="groupLight" open>
+        <summary>光影融合</summary>
+        <div class="group-body" id="lightControls">
+          <button class="mini wide" id="btnEstimateLight">按场景自动估计光源</button>
+          <label class="slider">
+            <span>光源方位 <b id="valAngle">315°（左上）</b></span>
+            <input type="range" id="angleRange" min="0" max="359" value="315">
+          </label>
+          <label class="slider">
+            <span>定向明暗 <b id="valLight">0%</b></span>
+            <input type="range" id="lightRange" min="0" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>轮廓光 <b id="valRim">0%</b></span>
+            <input type="range" id="rimRange" min="0" max="100" value="0">
+          </label>
+          <label class="slider">
+            <span>投影强度 <b id="valShadow">35%</b></span>
+            <input type="range" id="shadowRange" min="0" max="100" value="35">
+          </label>
+          <label class="slider">
+            <span>投影长度 <b id="valShadowLen">35%</b></span>
+            <input type="range" id="shadowLenRange" min="0" max="100" value="35">
+          </label>
+          <p class="note">投影方向/长度跟随光源方位；「定向明暗」让角色朝光面提亮、背光面压暗；「轮廓光」在受光边缘勾一圈环境色。</p>
+        </div>
+      </details>
+
+      <details class="group" open>
+        <summary>风格预设</summary>
+        <div class="group-body preset-grid">
+          <button class="preset" data-preset="natural">自然融合</button>
+          <button class="preset" data-preset="morning">清晨柔光</button>
+          <button class="preset" data-preset="sunset">黄昏暖调</button>
+          <button class="preset" data-preset="cinema">电影冷调</button>
+          <button class="preset" data-preset="vivid">动漫鲜艳</button>
+          <button class="preset ghost" data-preset="none">还原</button>
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <div id="toastBox"></div>
+
+  <dialog id="helpDialog">
+    <h3>操作指南</h3>
+    <ol>
+      <li>左侧上传<b>现实场景图</b>（背景），再上传<b>角色图</b>（动漫人物等）。角色会上传到服务端自动抠图，首次抠图需等模型下载/加载。</li>
+      <li>角色已在画布中：<b>拖动</b>移动，<b>滚轮</b>缩放，右侧面板可旋转、翻转、调不透明度。</li>
+      <li>「自动色调匹配」让角色颜色贴近场景光照；再用「色彩调整」对角色 / 场景 / 两者分别细调曝光、对比度、饱和度、色温、色调。</li>
+      <li>「贴地投影」给角色加地面阴影，「边缘羽化」柔化抠图边缘；边缘瑕疵用橡皮擦（擦除 / 还原）修补。</li>
+      <li>「风格预设」一键套用常用风格；满意后点「保存 PNG / JPG」导出。</li>
+    </ol>
+    <form method="dialog"><button class="primary">知道了</button></form>
+  </dialog>
+
+  <input type="file" id="sceneInput" accept="image/*" hidden>
+  <input type="file" id="charInput" accept="image/*" hidden>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

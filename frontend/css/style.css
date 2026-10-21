@@ -1,0 +1,341 @@
+:root {
+  --bg: #14161d;
+  --bg2: #1b1e28;
+  --bg3: #232735;
+  --line: #303647;
+  --text: #e8eaf2;
+  --text-dim: #9aa1b5;
+  --accent: #7c5cff;
+  --accent2: #37d0b2;
+  --danger: #ff5d73;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+button:hover { background: #2c3145; border-color: #3d4459; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); }
+button.primary:hover { background: #6b4bf0; }
+button.danger { color: var(--danger); }
+button.ghost { background: transparent; }
+button.mini { padding: 4px 9px; font-size: 12px; border-radius: 6px; }
+button.toggle.active { background: var(--accent); border-color: var(--accent); }
+.btn-row { display: flex; gap: 8px; margin-top: 8px; }
+.btn-row button { flex: 1; }
+
+/* ── 顶栏 ─────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+}
+.logo { font-weight: 700; font-size: 16px; }
+.logo .tag {
+  font-size: 11px;
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+.status-pill {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+.status-pill .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #888;
+}
+.status-pill.ok .dot { background: var(--accent2); }
+.status-pill.busy .dot { background: #ffb454; animation: pulse 1.2s infinite; }
+.status-pill.err .dot { background: var(--danger); }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* ── 布局 ─────────────────────────── */
+.workspace {
+  display: grid;
+  grid-template-columns: 232px 1fr 292px;
+  gap: 12px;
+  padding: 12px;
+  height: calc(100% - 52px);
+}
+
+.left-rail, .panel {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  overflow-y: auto;
+}
+.left-rail h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-dim);
+  margin: 10px 0 8px;
+}
+.left-rail h2:first-child { margin-top: 0; }
+
+/* ── 上传卡片 ─────────────────────── */
+.upload-card {
+  background: var(--bg3);
+  border: 1px dashed #3d4459;
+  border-radius: var(--radius);
+  padding: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.upload-card:hover, .upload-card.dragover { border-color: var(--accent); }
+.card-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+.thumb {
+  height: 92px;
+  border-radius: 7px;
+  background:
+    conic-gradient(#20232e 0 25%, #191c25 0 50%, #20232e 0 75%, #191c25 0) 0 0/16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.thumb span { color: #5b6278; font-size: 12px; text-align: center; }
+.thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.card-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+.field { display: block; margin-bottom: 8px; font-size: 12px; color: var(--text-dim); }
+.field select, select {
+  width: 100%;
+  margin-top: 4px;
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 6px;
+}
+.check {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+/* ── 画布区 ───────────────────────── */
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-width: 0;
+}
+#stageCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  background:
+    conic-gradient(#20232e 0 25%, #1a1d27 0 50%, #20232e 0 75%, #1a1d27 0) 0 0/20px 20px;
+  box-shadow: 0 0 0 1px var(--line);
+  cursor: grab;
+  touch-action: none;
+}
+#stageCanvas.dragging { cursor: grabbing; }
+#stageCanvas.brushing { cursor: crosshair; }
+.stage-empty {
+  position: absolute;
+  color: var(--text-dim);
+  text-align: center;
+  pointer-events: none;
+}
+.stage-empty .big { font-size: 44px; margin-bottom: 8px; }
+.stage-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(20, 22, 29, .82);
+  border: 1px solid var(--line);
+  padding: 4px 12px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.hidden { display: none !important; }
+
+#brushRing {
+  position: absolute;
+  border: 1.5px solid rgba(255, 255, 255, .75);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(0, 0);
+}
+
+button.wide { width: 100%; margin-bottom: 6px; }
+
+.spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 22, 29, .72);
+  z-index: 5;
+}
+.spinner > div {
+  width: 42px; height: 42px;
+  border: 4px solid var(--bg3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 右侧面板 ─────────────────────── */
+.panel { width: auto; }
+.group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg3);
+  margin-bottom: 10px;
+}
+.group[open] { padding-bottom: 6px; }
+summary {
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.group-body { padding: 0 12px 8px; }
+
+.slider { display: block; margin: 8px 0; }
+.slider span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.slider b { color: var(--text); font-weight: 600; }
+input[type="range"] {
+  width: 100%;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.segmented {
+  display: flex;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+.segmented button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  padding: 5px 0;
+  border-radius: 6px;
+}
+.segmented button.active { background: var(--accent); }
+
+.note { font-size: 11px; color: var(--text-dim); margin: 8px 0 2px; }
+.tool-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+.tool-row .btn-row { margin-top: 0; }
+.tool-row button { flex: none; }
+
+.preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.preset { font-size: 12px; }
+
+/* ── Toast ────────────────────────── */
+#toastBox {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+  align-items: center;
+}
+.toast {
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .4);
+  animation: slideIn .18s ease-out;
+}
+.toast.success { border-left-color: var(--accent2); }
+.toast.error { border-left-color: var(--danger); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } }
+
+/* ── 帮助弹窗 ─────────────────────── */
+dialog {
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 24px;
+  max-width: 480px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, .55); }
+dialog h3 { margin-top: 0; }
+dialog ol { padding-left: 20px; }
+dialog li { margin: 8px 0; }
+
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: 200px 1fr 260px; }
+}
