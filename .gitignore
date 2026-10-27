@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# 运行产物与日志
+*.log
+dissolve.log
+
+# 本地测试素材（勿提交版权图片）
+frontend/test/
+
+# 编辑器
+.idea/
+.vscode/
